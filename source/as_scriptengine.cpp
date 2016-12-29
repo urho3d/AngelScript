@@ -28,6 +28,7 @@
    andreas@angelcode.com
 */
 
+// Modified by Lasse Oorni for Urho3D
 
 //
 // as_scriptengine.cpp
@@ -5953,7 +5954,7 @@ asITypeInfo *asCScriptEngine::GetEnumByIndex(asUINT index) const
 	return registeredEnums[index];
 }
 
-#ifdef AS_DEPRECATED
+// Urho3D: removed deprecation for ScriptAPIDump
 // Deprecated since 2.31.0, 2015-12-06
 // interface
 int asCScriptEngine::GetEnumValueCount(int enumTypeId) const
@@ -5965,9 +5966,7 @@ int asCScriptEngine::GetEnumValueCount(int enumTypeId) const
 
 	return e->GetEnumValueCount();
 }
-#endif
 
-#ifdef AS_DEPRECATED
 // Deprecated since 2.31.0, 2015-12-06
 // interface
 const char *asCScriptEngine::GetEnumValueByIndex(int enumTypeId, asUINT index, int *outValue) const
@@ -5979,7 +5978,6 @@ const char *asCScriptEngine::GetEnumValueByIndex(int enumTypeId, asUINT index, i
 
 	return e->GetEnumValueByIndex(index, outValue);
 }
-#endif
 
 // interface
 asUINT asCScriptEngine::GetObjectTypeCount() const
