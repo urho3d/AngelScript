@@ -28,6 +28,7 @@
    andreas@angelcode.com
 */
 
+// Modified by Lasse Oorni for Urho3D
 
 //
 // as_builder.cpp
@@ -3380,6 +3381,8 @@ void asCBuilder::CompileClasses(asUINT numTempl)
 	//                         existing module. However, the applications that want to use that should use a special
 	//                         build flag to not finalize the module.
 
+	// Urho3D: disable garbage collection from script classes
+	/*
 	asCArray<asCObjectType*> typesToValidate;
 	for( n = 0; n < classDeclarations.GetLength(); n++ )
 	{
@@ -3565,6 +3568,7 @@ void asCBuilder::CompileClasses(asUINT numTempl)
 		// Reset the counter
 		numReevaluations = 0;
 	}
+	*/
 }
 
 void asCBuilder::IncludeMethodsFromMixins(sClassDeclaration *decl)

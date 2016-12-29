@@ -1,214 +1,57 @@
-cmake_minimum_required(VERSION 3.5)
+#
+# Copyright (c) 2008-2016 the Urho3D project.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
 
-project(angelscript)
+# Define target name
+set (TARGET_NAME AngelScript)
 
-option(BUILD_SHARED_LIBS "Build shared library" OFF)
-option(AS_NO_EXCEPTIONS "Disable exception handling in script context" OFF)
+# Add compiler define to build the library with the normal function/method macros
+add_definitions (-DAS_IS_BUILDING)
 
-if(APPLE)
-    option(BUILD_FRAMEWORK "Build Framework bundle for OSX" OFF)
-endif()
+# Define source files
+define_source_files (GLOB_CPP_PATTERNS source/*.cpp GLOB_H_PATTERNS include/*.h source/*.h)
+if (ARM)
+    enable_language (ASM)
+    if (XCODE)
+        # It is safe to add this assembler code in universal binary build because it has sufficient preprocessor define guards to exclude unsupported archs
+        set (ASM_FILES source/as_callfunc_arm_xcode.S)
+    else ()
+        set (ASM_FILES source/as_callfunc_arm_gcc.S)
+        set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${ARM_CFLAGS}")
+    endif ()
+elseif (MSVC AND URHO3D_64BIT)
+    enable_language (ASM_MASM)
+    # Commented out due to cmake bug - todo: Recheck if this workaround is still necessary when increasing CMake minimum version
+    #set (ASM_FILES source/as_callfunc_x64_msvc_asm.asm)
+    # As a temporary workaround
+    add_custom_command (OUTPUT as_callfunc_x64_msvc_asm.obj COMMAND ${CMAKE_ASM_MASM_COMPILER} -Fo ${CMAKE_CURRENT_BINARY_DIR}/as_callfunc_x64_msvc_asm.obj -c ${CMAKE_CURRENT_SOURCE_DIR}/source/as_callfunc_x64_msvc_asm.asm DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/as_callfunc_x64_msvc_asm.asm COMMENT "Temporary workaround for MASM")
+    set (ASM_FILES ${CMAKE_CURRENT_BINARY_DIR}/as_callfunc_x64_msvc_asm.obj ${CMAKE_CURRENT_SOURCE_DIR}/source/as_callfunc_x64_msvc_asm.asm)
+endif ()
+list (APPEND SOURCE_FILES ${ASM_FILES})
 
-file(READ ../../include/angelscript.h ANGELSCRIPT_H)
-string(REGEX MATCH "#define ANGELSCRIPT_VERSION_STRING \"([0-9]*).([0-9]*).([0-9]*)" ANGELSCRIPT_VERSION_REGEX ${ANGELSCRIPT_H})
-set(ANGELSCRIPT_VERSION_MAJOR ${CMAKE_MATCH_1})
-set(ANGELSCRIPT_VERSION_MINOR ${CMAKE_MATCH_2})
-set(ANGELSCRIPT_VERSION_PATCH ${CMAKE_MATCH_3})
-set(PROJECT_VERSION ${ANGELSCRIPT_VERSION_MAJOR}.${ANGELSCRIPT_VERSION_MINOR}.${ANGELSCRIPT_VERSION_PATCH})
+# Define dependency libs
+set (INCLUDE_DIRS include)
 
-message(STATUS "Configuring angelscript ${PROJECT_VERSION}")
+# Setup target
+setup_library ()
 
-find_package(Threads)
-
-set(ANGELSCRIPT_HEADERS
-    ../../include/angelscript.h
-    ../../source/as_array.h
-    ../../source/as_builder.h
-    ../../source/as_bytecode.h
-    ../../source/as_callfunc.h
-    ../../source/as_compiler.h
-    ../../source/as_config.h
-    ../../source/as_configgroup.h
-    ../../source/as_context.h
-    ../../source/as_criticalsection.h
-    ../../source/as_datatype.h
-    ../../source/as_debug.h
-    ../../source/as_generic.h
-    ../../source/as_map.h
-    ../../source/as_memory.h
-    ../../source/as_module.h
-    ../../source/as_objecttype.h
-    ../../source/as_outputbuffer.h
-    ../../source/as_parser.h
-    ../../source/as_property.h
-    ../../source/as_restore.h
-    ../../source/as_scriptcode.h
-    ../../source/as_scriptengine.h
-    ../../source/as_scriptfunction.h
-    ../../source/as_scriptnode.h
-    ../../source/as_scriptobject.h
-    ../../source/as_string.h
-    ../../source/as_string_util.h
-    ../../source/as_texts.h
-    ../../source/as_thread.h
-    ../../source/as_tokendef.h
-    ../../source/as_tokenizer.h
-    ../../source/as_typeinfo.h
-    ../../source/as_variablescope.h
-)
-
-set(ANGELSCRIPT_SOURCE
-    ../../source/as_atomic.cpp
-    ../../source/as_builder.cpp
-    ../../source/as_bytecode.cpp
-    ../../source/as_callfunc.cpp
-    ../../source/as_callfunc_mips.cpp
-    ../../source/as_callfunc_x86.cpp
-    ../../source/as_callfunc_x64_gcc.cpp
-    ../../source/as_callfunc_x64_msvc.cpp
-    ../../source/as_callfunc_x64_mingw.cpp
-    ../../source/as_compiler.cpp
-    ../../source/as_configgroup.cpp
-    ../../source/as_context.cpp
-    ../../source/as_datatype.cpp
-    ../../source/as_gc.cpp
-    ../../source/as_generic.cpp
-    ../../source/as_globalproperty.cpp
-    ../../source/as_memory.cpp
-    ../../source/as_module.cpp
-    ../../source/as_objecttype.cpp
-    ../../source/as_outputbuffer.cpp
-    ../../source/as_parser.cpp
-    ../../source/as_restore.cpp
-    ../../source/as_scriptcode.cpp
-    ../../source/as_scriptengine.cpp
-    ../../source/as_scriptfunction.cpp
-    ../../source/as_scriptnode.cpp
-    ../../source/as_scriptobject.cpp
-    ../../source/as_string.cpp
-    ../../source/as_string_util.cpp
-    ../../source/as_thread.cpp
-    ../../source/as_tokenizer.cpp
-    ../../source/as_typeinfo.cpp
-    ../../source/as_variablescope.cpp
-)
-
-if(MSVC AND CMAKE_CL_64)
-    enable_language(ASM_MASM)
-    if(CMAKE_ASM_MASM_COMPILER_WORKS)
-        set(ANGELSCRIPT_SOURCE ${ANGELSCRIPT_SOURCE} ../../source/as_callfunc_x64_msvc_asm.asm)
-    else()
-        message(FATAL ERROR "MSVC x86_64 target requires a working assembler")
-    endif()
-endif()
-
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
-    enable_language(ASM)
-    if(CMAKE_ASM_COMPILER_WORKS)
-        set(ANGELSCRIPT_SOURCE ${ANGELSCRIPT_SOURCE} ../../source/as_callfunc_arm.cpp ../../source/as_callfunc_arm_gcc.S)
-        set_property(SOURCE ../../source/as_callfunc_arm_gcc.S APPEND PROPERTY COMPILE_FLAGS " -Wa,-mimplicit-it=always")
-    else()
-        message(FATAL ERROR "ARM target requires a working assembler")
-    endif()
-endif()
-
-if(MSVC)
-    set(CMAKE_DEBUG_POSTFIX "d")  
-endif()
-
-if(NOT BUILD_FRAMEWORK)
-    set(ANGELSCRIPT_LIBRARY_NAME angelscript)
-else()
-    set(ANGELSCRIPT_LIBRARY_NAME Angelscript) # OS X frameworks should have capitalized name
-    set(BUILD_SHARED_LIBS TRUE)
-endif()
-set(ANGELSCRIPT_LIBRARY_NAME ${ANGELSCRIPT_LIBRARY_NAME} CACHE STRING "" FORCE)
-
-add_library(${ANGELSCRIPT_LIBRARY_NAME} ${ANGELSCRIPT_SOURCE} ${ANGELSCRIPT_HEADERS})
-
-target_include_directories(${ANGELSCRIPT_LIBRARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
-
-if(MSVC)
-    target_compile_definitions(${ANGELSCRIPT_LIBRARY_NAME} PRIVATE -D_CRT_SECURE_NO_WARNINGS)    
-endif()
-
-target_compile_definitions(${ANGELSCRIPT_LIBRARY_NAME} PRIVATE -DANGELSCRIPT_EXPORT -D_LIB)
-
-if(AS_NO_EXCEPTIONS)
-	target_compile_definitions(${ANGELSCRIPT_LIBRARY_NAME} PRIVATE AS_NO_EXCEPTIONS)
-endif()
-
-# Fix x64 issues on Linux
-if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" AND UNIX AND NOT APPLE)
-    target_compile_options(${ANGELSCRIPT_LIBRARY_NAME} PRIVATE -fPIC)
-endif()
-
-# Don't override the default library output path to avoid conflicts when building for multiple target platforms
-#set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../lib)
-target_link_libraries(${ANGELSCRIPT_LIBRARY_NAME} Threads::Threads)
-
-set_target_properties(${ANGELSCRIPT_LIBRARY_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-
-if(BUILD_FRAMEWORK)
-    set_target_properties(${ANGELSCRIPT_LIBRARY_NAME} PROPERTIES
-        FRAMEWORK TRUE
-        FRAMEWORK_VERSION ${PROJECT_VERSION}
-        MACOSX_FRAMEWORK_IDENTIFIER com.angelcode.Angelscript
-        MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${PROJECT_VERSION}
-        MACOSX_FRAMEWORK_BUNDLE_VERSION ${PROJECT_VERSION}
-        XCODE_ATTRIBUTE_INSTALL_PATH "@rpath"
-        PUBLIC_HEADER ../../include/angelscript.h
-    )
-endif()
-
-if(MSVC)
-    set_target_properties(${ANGELSCRIPT_LIBRARY_NAME} PROPERTIES COMPILE_FLAGS "/MP")
-endif()
-
-# Don't override the default runtime output path to avoid conflicts when building for multiple target platforms
-#set(RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../../bin)
-
-#See https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#creating-packages for a detailed explanation about this part
-install(TARGETS ${ANGELSCRIPT_LIBRARY_NAME} EXPORT AngelscriptTargets
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	INCLUDES DESTINATION include
-)
-
-install(FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/../../include/angelscript.h
-	DESTINATION include
-	COMPONENT Devel
-)
-
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/Angelscript/AngelscriptConfigVersion.cmake"
-	VERSION ${PROJECT_VERSION}
-	COMPATIBILITY AnyNewerVersion
-)
-
-export(EXPORT AngelscriptTargets
-	FILE "${CMAKE_CURRENT_BINARY_DIR}/Angelscript/AngelscriptTargets.cmake"
-	NAMESPACE Angelscript::
-)
-configure_file(cmake/AngelscriptConfig.cmake
-	"${CMAKE_CURRENT_BINARY_DIR}/Angelscript/AngelscriptConfig.cmake"
-	COPYONLY
-)
-
-set(ConfigPackageLocation lib/cmake/Angelscript)
-install(EXPORT AngelscriptTargets
-	FILE AngelscriptTargets.cmake
-	NAMESPACE Angelscript::
-	DESTINATION ${ConfigPackageLocation}
-)
-install(
-	FILES
-		cmake/AngelscriptConfig.cmake
-		"${CMAKE_CURRENT_BINARY_DIR}/Angelscript/AngelscriptConfigVersion.cmake"
-	DESTINATION ${ConfigPackageLocation}
-	COMPONENT Devel
-)
-
+# Install headers for building and using the Urho3D library (install dependency for Urho3D/Script/APITemplates.h)
+install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/AngelScript FILES_MATCHING PATTERN *.h)     # Note: the trailing slash is significant
