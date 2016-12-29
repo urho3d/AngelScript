@@ -28,6 +28,7 @@
    andreas@angelcode.com
 */
 
+// Modified by Nathanial Lydick for Urho3D
 
 //
 // as_context.cpp
@@ -5176,6 +5177,15 @@ int asCContext::CallGeneric(asCScriptFunction *descr)
 	m_regs.valueRegister = gen.returnVal;
 	m_regs.objectRegister = gen.objectRegister;
 	m_regs.objectType = descr->returnType.GetTypeInfo();
+
+	// Urho3D: add autohandle support
+	// based on http://www.gamedev.net/topic/630414-autohandles-with-generic-callconv/
+	if ( descr->returnType.IsObject()
+			&& !descr->returnType.IsReference()
+			&& descr->returnType.IsObjectHandle()
+			&& sysFunc->returnAutoHandle
+			&& m_regs.objectRegister )
+			m_engine->AddRefScriptObject(m_regs.objectRegister, descr->returnType.GetTypeInfo());
 
 	// Clean up arguments
 	const asUINT cleanCount = sysFunc->cleanArgs.GetLength();

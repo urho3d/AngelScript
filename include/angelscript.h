@@ -28,6 +28,7 @@
    andreas@angelcode.com
 */
 
+// Modified by Lasse Oorni and Nathanial Lydick for Urho3D
 
 //
 // angelscript.h
@@ -38,6 +39,11 @@
 
 #ifndef ANGELSCRIPT_H
 #define ANGELSCRIPT_H
+
+// Urho3D: Define AS_MAX_PORTABILITY for Web and 64-bit ARM platforms
+#if defined(__EMSCRIPTEN__) || defined(__aarch64__)
+#define AS_MAX_PORTABILITY
+#endif
 
 #include <stddef.h>
 #ifndef _MSC_VER
@@ -434,6 +440,9 @@ typedef void (*asRETURNCONTEXTFUNC_t)(asIScriptEngine *, asIScriptContext *, voi
 // check that the cast is really valid.
 // BCC v5.8 (C++Builder 2006) and earlier have a similar bug which forces us to fall back to a C-style cast.
 #define asFUNCTIONPR(f,p,r) asFunctionPtr((void (*)())((r (*)p)(f)))
+#elif (defined(_MSC_VER) && _MSC_VER >= 1900)
+// Urho3D: VS2015 does not compile the C-style cast of the function pointer
+#define asFUNCTIONPR(f,p,r) asFunctionPtr(reinterpret_cast<void (*)()>(static_cast<r (*)p>(f)))
 #else
 #define asFUNCTIONPR(f,p,r) asFunctionPtr((void (*)())(static_cast<r (*)p>(f)))
 #endif
@@ -715,11 +724,10 @@ public:
 	virtual int          RegisterEnumValue(const char *type, const char *name, int value) = 0;
 	virtual asUINT       GetEnumCount() const = 0;
 	virtual asITypeInfo *GetEnumByIndex(asUINT index) const = 0;
-#ifdef AS_DEPRECATED
+	// Urho3D: Removed deprecation for ScriptAPIDump
 	// Deprecated since 2.31.0, 2015-12-06
 	virtual int          GetEnumValueCount(int enumTypeId) const = 0;
 	virtual const char * GetEnumValueByIndex(int enumTypeId, asUINT index, int *outValue) const = 0;
-#endif
 
 	// Funcdefs
 	virtual int          RegisterFuncdef(const char *decl) = 0;
@@ -1977,6 +1985,15 @@ const asSBCInfo asBCInfo[256] =
 #define asBC_SWORDARG1(x) (*(((short*)x)+2))
 #define asBC_SWORDARG2(x) (*(((short*)x)+3))
 
+// Urho3D: Include the wrapper macros file but only after they have been defined above
+// This causes a large number of warnings, which could possibly be prevented with further
+// changes to the library or the Urho Angelscript code
+// Only include this file if we are NOT building the angelscript library itself,
+// as Angelscript already provides generic wrappers for their classes
+// (AS_IS_BUILDING is defined in the CMakeLists.txt file for the AngelScript (sub)library)
+#ifndef AS_IS_BUILDING
+#include "wrapmacros.h"
+#endif
 
 END_AS_NAMESPACE
 

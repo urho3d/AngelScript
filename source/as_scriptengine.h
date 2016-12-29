@@ -28,6 +28,7 @@
    andreas@angelcode.com
 */
 
+// Modified by Lasse Oorni for Urho3D
 
 //
 // as_scriptengine.h
@@ -126,11 +127,10 @@ public:
 	virtual int          RegisterEnumValue(const char *type, const char *name, int value);
 	virtual asUINT       GetEnumCount() const;
 	virtual asITypeInfo *GetEnumByIndex(asUINT index) const;
-#ifdef AS_DEPRECATED
+	// Urho3D: removed deprecation for ScriptAPIDump
 	// Deprecated since 2.31.0, 2015-12-06
 	virtual int          GetEnumValueCount(int enumTypeId) const;
 	virtual const char * GetEnumValueByIndex(int enumTypeId, asUINT index, int *outValue) const;
-#endif
 
 	// Funcdefs
 	virtual int          RegisterFuncdef(const char *decl);
